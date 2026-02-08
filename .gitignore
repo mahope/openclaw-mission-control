@@ -33,9 +33,19 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local mission-control runtime files
+.mission-control.json
+.mission-control-autopilot.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+BACKLOG.md 
+codex-prompt.txt 
+scripts/_test_event.json
+.mission-control-alerts.json 
+scripts/fix-known-hosts.ps1 
+codex-next.txt

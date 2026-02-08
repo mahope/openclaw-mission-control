@@ -12,6 +12,7 @@ export const da = {
 
   theme: "Tema",
   language: "Sprog",
+  copyPath: "Kopiér sti",
 
   overviewIntro: "Lokal operationshub for alt det OpenClaw rører ved.",
   quickRefreshCalendar: "Opdater kalender",

@@ -9,7 +9,10 @@ function pickRc(details: unknown): number | null {
   const d = details as Record<string, unknown>;
   if (typeof d.rc === "number") return d.rc;
   if (typeof d.RC === "number") return d.RC;
-  if (d.details && typeof d.details === "object" && typeof d.details.rc === "number") return d.details.rc;
+  if (d.details && typeof d.details === "object") {
+    const inner = d.details as Record<string, unknown>;
+    if (typeof inner.rc === "number") return inner.rc;
+  }
   return null;
 }
 

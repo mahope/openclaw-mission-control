@@ -12,6 +12,7 @@ export const en = {
 
   theme: "Theme",
   language: "Language",
+  copyPath: "Copy path",
 
   overviewIntro: "Local operations hub for everything OpenClaw touches.",
   quickRefreshCalendar: "Refresh calendar",

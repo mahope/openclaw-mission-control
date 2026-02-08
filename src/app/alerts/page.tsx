@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useI18n } from "../LocaleProvider";
@@ -8,7 +8,21 @@ import { useI18n } from "../LocaleProvider";
 export default function AlertsPage() {
   const { t, locale } = useI18n();
   const [dispatching, setDispatching] = useState(false);
+  const [lastDispatchAt, setLastDispatchAt] = useState<number | null>(null);
   const alerts = useQuery(api.alerts.listAlerts, { limit: 200 });
+
+  useEffect(() => {
+    fetch("/api/alerts/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json && typeof json.lastDispatchAt === "number") {
+          setLastDispatchAt(json.lastDispatchAt);
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+  }, []);
 
   return (
     <div className="grid cols-2">
@@ -30,6 +44,9 @@ export default function AlertsPage() {
             {dispatching ? t("sending") : t("dispatchNow")}
           </button>
           <span className="page-subtitle">{t("total")}: {alerts?.length ?? "—"}</span>
+          <span className="page-subtitle">
+            Last dispatch: {lastDispatchAt ? new Date(lastDispatchAt).toLocaleString(locale === "da" ? "da-DK" : "en-US") : "—"}
+          </span>
         </div>
       </section>
 

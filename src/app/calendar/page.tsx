@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { formatRelativeTime } from "../../lib/format";
@@ -22,6 +22,7 @@ export default function CalendarPage() {
   const [systemFilter, setSystemFilter] = useState<string>("");
   const [enabledOnly, setEnabledOnly] = useState<boolean>(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<"grid" | "list">("grid");
   const now = new Date();
   const weekStart = startOfWeek(now);
   const weekEnd = new Date(weekStart);
@@ -31,6 +32,15 @@ export default function CalendarPage() {
     start: weekStart.getTime(),
     end: weekEnd.getTime(),
   });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("mc-calendar-view");
+    if (saved === "grid" || saved === "list") setView(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("mc-calendar-view", view);
+  }, [view]);
 
   const days = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -101,12 +111,74 @@ export default function CalendarPage() {
             />
             {t("enabledOnly")}
           </label>
+          <button
+            className="button secondary"
+            onClick={() => setView((v) => (v === "grid" ? "list" : "grid"))}
+          >
+            {locale === "da"
+              ? `Visning: ${view === "grid" ? "Grid" : "Liste"}`
+              : `View: ${view === "grid" ? "Grid" : "List"}`}
+          </button>
           <span className="page-subtitle">{t("showing")}: {filteredSchedules.length}</span>
         </div>
       </section>
 
       <section className="panel calendar" style={{ gridColumn: "1 / -1" }}>
-        <div className="calendar-grid">
+        {view === "list" ? (
+          <div className="list">
+            {days.map((day) => {
+              const start = new Date(day);
+              start.setHours(0, 0, 0, 0);
+              const end = new Date(start);
+              end.setDate(start.getDate() + 1);
+              const items = filteredSchedules
+                .filter((s) => s.nextRunAt >= start.getTime() && s.nextRunAt < end.getTime())
+                .sort((a, b) => a.nextRunAt - b.nextRunAt);
+
+              return (
+                <div key={day.toDateString()} className="panel">
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <strong>
+                      {day.toLocaleDateString(locale === "da" ? "da-DK" : "en-US", {
+                        weekday: "long",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </strong>
+                    <span className="pill">{items.length}</span>
+                  </div>
+                  <div className="list" style={{ marginTop: 12 }}>
+                    {items.map((item) => (
+                      <button
+                        key={item._id}
+                        className="list-item"
+                        style={{ textAlign: "left", cursor: "pointer" }}
+                        onClick={() => setSelectedId(item._id)}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <strong>{item.name}</strong>
+                          <span className="pill">
+                            {new Date(item.nextRunAt).toLocaleTimeString(locale === "da" ? "da-DK" : "en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <div className="page-subtitle">{item.system} · {item.scheduleText}</div>
+                      </button>
+                    ))}
+                    {!items.length && (
+                      <div className="page-subtitle" style={{ padding: 10 }}>
+                        —
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="calendar-grid">
           <div className="calendar-header">
             <div className="calendar-cell day">Time</div>
             {days.map((day) => (
@@ -147,6 +219,7 @@ export default function CalendarPage() {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {selected && (

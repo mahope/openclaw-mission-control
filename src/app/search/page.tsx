@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../LocaleProvider";
 
 type TailResponse = {
@@ -14,11 +14,13 @@ import { api } from "../../../convex/_generated/api";
 
 export default function SearchPage() {
   const { t, locale } = useI18n();
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
   const [source, setSource] = useState("");
   const [selected, setSelected] = useState<TailResponse | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const results = useQuery(api.search.searchAll, {
     text: query,
@@ -27,6 +29,17 @@ export default function SearchPage() {
     limit: 50,
   });
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("focus") === "1") {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+    const handler = () => inputRef.current?.focus();
+    window.addEventListener("mc:focus-search", handler as EventListener);
+    return () =>
+      window.removeEventListener("mc:focus-search", handler as EventListener);
+  }, []);
+
   return (
     <div className="grid cols-2">
       <section className="panel" style={{ gridColumn: "1 / -1" }}>
@@ -34,6 +47,7 @@ export default function SearchPage() {
         <p className="page-subtitle">{t("searchSubtitle")}</p>
         <div className="filters" style={{ marginTop: 20, alignItems: "center" }}>
           <input
+            ref={inputRef}
             type="text"
             placeholder={t("searchPlaceholder")}
             value={query}
@@ -67,6 +81,7 @@ export default function SearchPage() {
               onClick={async () => {
                 setSelected(null);
                 setSelectedTitle(item.title);
+                setSelectedPath(item.path ?? null);
                 if (!item.path) return;
                 try {
                   setPreviewLoading(true);
@@ -108,9 +123,30 @@ export default function SearchPage() {
 
           {(selectedTitle || selected) && (
             <>
-              <div className="drawer-backdrop" onClick={() => { setSelected(null); setSelectedTitle(null); }} />
+              <div className="drawer-backdrop" onClick={() => { setSelected(null); setSelectedTitle(null); setSelectedPath(null); }} />
               <aside className="drawer">
                 <h2 style={{ marginTop: 0 }}>{selectedTitle ?? "Preview"}</h2>
+                {selectedPath && (
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    <div className="page-subtitle mono" style={{ wordBreak: "break-all" }}>
+                      {selectedPath}
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <button
+                        className="button secondary"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(selectedPath);
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                      >
+                        {t("copyPath")}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {previewLoading && <p className="page-subtitle">{t("previewLoading")}</p>}
                 {selected ? (
                   <>

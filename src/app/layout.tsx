@@ -7,6 +7,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { LocaleToggle } from "./LocaleToggle";
 import { LocaleBridge } from "./LocaleBridge";
 import { AppTitle } from "./AppTitle";
+import { SidebarFooter } from "./SidebarFooter";
+import { CommandPalette } from "./CommandPalette";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -54,13 +56,7 @@ export default function RootLayout({
                 <SidebarNav />
               </div>
 
-              <div className="sidebar-footer">
-                <div className="page-subtitle">Theme / Language</div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <ThemeToggle />
-                  <LocaleToggle />
-                </div>
-              </div>
+              <SidebarFooter />
             </aside>
 
             <div className="content">
@@ -74,6 +70,7 @@ export default function RootLayout({
                 </div>
               </header>
               <main className="main">{children}</main>
+              <CommandPalette />
             </div>
           </div>
         </Providers>

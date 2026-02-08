@@ -36,15 +36,18 @@ async function run() {
     for (const entry of entries) {
       const e = entry as Record<string, unknown>;
       const externalId = `openclaw-cron-run:${e.jobId}:${e.runAtMs ?? e.ts}`;
-      const status = e.status ?? "unknown";
+      const status = typeof e.status === "string" ? e.status : "unknown";
 
       const summary =
         status === "error"
           ? `Cron run failed: ${j.name ?? j.id}`
           : `Cron run finished: ${j.name ?? j.id}`;
 
+      const runAtMs = typeof e.runAtMs === "number" ? e.runAtMs : null;
+      const ts = typeof e.ts === "number" ? e.ts : null;
+
       await client.mutation(api.activity.createActivityEvent, {
-        ts: e.runAtMs ?? e.ts ?? Date.now(),
+        ts: runAtMs ?? ts ?? Date.now(),
         source: "openclaw",
         kind: "cron_run",
         status,
