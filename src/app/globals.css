@@ -560,3 +560,11 @@ textarea {
     grid-template-columns: 70px repeat(7, minmax(120px, 1fr));
   }
 }
+
+/* Calendar interactive redesign */
+.agenda { display: grid; gap: 14px; }
+.agenda-day { width: 100%; border: 1px solid var(--panel-border); background: rgba(255, 255, 255, 0.35); color: var(--ink); border-radius: 14px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+:root[data-theme="dark"] .agenda-day { background: rgba(255, 255, 255, 0.04); }
+.calendar-controls { margin-top: 12px; }
+.calendar-controls-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+.calendar-week { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }

@@ -1,0 +1,33 @@
+Refactor and redesign the Calendar module to be more interactive.
+
+Context:
+- Next.js App Router project in this repo.
+- Calendar page: src/app/calendar/page.tsx
+- Data comes from Convex scheduled_items via api.schedules.listScheduledItems({start,end}) which currently returns items with nextRunAt.
+- There is currently a grid view and a list view toggle.
+
+Goals:
+1) Refactor Calendar page into smaller components (keep it maintainable):
+   - components for header controls, grid view, agenda view, schedule drawer.
+2) Redesign UX for small screens:
+   - Make Agenda view the default on small screens.
+   - Improve spacing/typography and make it feel like a control room.
+3) Add week navigation:
+   - Prev week / Today / Next week.
+   - Week label.
+4) Add filters:
+   - system filter (openclaw/windows), enabled-only toggle, text search.
+5) Improve interactivity:
+   - Clicking an item opens a drawer with details.
+   - Add "Copy command" and "Copy externalId" buttons.
+
+Stretch (if time):
+6) Expand OpenClaw cron schedules into multiple occurrences within the selected week.
+   - Parse openclaw scheduleText (it includes cron expr and tz in parentheses) OR store cron expr separately if needed.
+   - Use cron-parser to generate all occurrences between start/end.
+
+Constraints:
+- Keep i18n support (use useI18n + t() keys; add keys to da/en as needed).
+- Ensure npm run lint and npm run build pass.
+
+When done, summarize changes + files modified.

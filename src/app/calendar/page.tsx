@@ -3,30 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { formatRelativeTime } from "../../lib/format";
 import { useI18n } from "../LocaleProvider";
-
-function startOfWeek(date: Date) {
-  const d = new Date(date);
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-const hours = Array.from({ length: 24 }, (_, i) => i);
+import { CalendarAgenda } from "./CalendarAgenda";
+import { CalendarControls, CalendarView } from "./CalendarControls";
+import { CalendarGrid } from "./CalendarGrid";
+import { ScheduleDrawer } from "./ScheduleDrawer";
+import { addDays, startOfWeek } from "./utils";
 
 export default function CalendarPage() {
   const { t, locale } = useI18n();
+
   const [refreshing, setRefreshing] = useState(false);
-  const [systemFilter, setSystemFilter] = useState<string>("");
-  const [enabledOnly, setEnabledOnly] = useState<boolean>(true);
+  const [systemFilter, setSystemFilter] = useState("");
+  const [enabledOnly, setEnabledOnly] = useState(true);
+  const [textFilter, setTextFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState<"grid" | "list">("grid");
+
+  const [view, setView] = useState<CalendarView>("grid");
+
+  const [weekOffset, setWeekOffset] = useState(0);
   const now = new Date();
-  const weekStart = startOfWeek(now);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  const weekStart = addDays(startOfWeek(now), weekOffset * 7);
+  const weekEnd = addDays(weekStart, 7);
 
   const schedules = useQuery(api.schedules.listScheduledItems, {
     start: weekStart.getTime(),
@@ -35,7 +33,13 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("mc-calendar-view");
-    if (saved === "grid" || saved === "list") setView(saved);
+    if (saved === "grid" || saved === "agenda") setView(saved);
+
+    // Default to agenda on small screens
+    if (!saved) {
+      const small = window.matchMedia?.("(max-width: 980px)").matches;
+      if (small) setView("agenda");
+    }
   }, []);
 
   useEffect(() => {
@@ -43,39 +47,38 @@ export default function CalendarPage() {
   }, [view]);
 
   const days = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      return d;
-    });
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   }, [weekStart]);
 
   const filteredSchedules = useMemo(() => {
-    const list = schedules ?? [];
-    return list.filter((item) => {
+    const q = textFilter.trim().toLowerCase();
+    return (schedules ?? []).filter((item) => {
       if (enabledOnly && !item.enabled) return false;
       if (systemFilter && item.system !== systemFilter) return false;
+      if (q) {
+        const hay = `${item.name} ${item.scheduleText} ${item.command}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [schedules, enabledOnly, systemFilter]);
+  }, [schedules, enabledOnly, systemFilter, textFilter]);
 
   const selected = useMemo(
     () => filteredSchedules.find((s) => s._id === selectedId) ?? null,
     [filteredSchedules, selectedId]
   );
 
-  const scheduleMap = useMemo(() => {
-    type ScheduleItem = NonNullable<typeof schedules>[number];
-    const map = new Map<string, ScheduleItem[]>();
-    filteredSchedules.forEach((item) => {
-      const date = new Date(item.nextRunAt);
-      const key = `${date.toDateString()}-${date.getHours()}`;
-      const current = map.get(key) ?? [];
-      current.push(item);
-      map.set(key, current);
+  const weekLabel = useMemo(() => {
+    const start = weekStart.toLocaleDateString(locale === "da" ? "da-DK" : "en-US", {
+      month: "short",
+      day: "numeric",
     });
-    return map;
-  }, [filteredSchedules]);
+    const end = addDays(weekEnd, -1).toLocaleDateString(locale === "da" ? "da-DK" : "en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    return `${start} – ${end}`;
+  }, [weekStart, weekEnd, locale]);
 
   const refreshSchedules = async () => {
     try {
@@ -89,165 +92,60 @@ export default function CalendarPage() {
   return (
     <div className="grid cols-2">
       <section className="panel" style={{ gridColumn: "1 / -1" }}>
-        <h1 className="page-title">{t("calendarTitle")}</h1>
         <p className="page-subtitle">{t("calendarSubtitle")}</p>
-        <div className="filters" style={{ marginTop: 16, alignItems: "center" }}>
-          <button className="button" onClick={refreshSchedules}>
-            {refreshing ? t("updating") : t("updateCalendar")}
-          </button>
-          <select
-            value={systemFilter}
-            onChange={(e) => setSystemFilter(e.target.value)}
-          >
-            <option value="">{t("allSystems")}</option>
-            <option value="openclaw">openclaw</option>
-            <option value="windows">windows</option>
-          </select>
-          <label className="page-subtitle" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={enabledOnly}
-              onChange={(e) => setEnabledOnly(e.target.checked)}
-            />
-            {t("enabledOnly")}
-          </label>
-          <button
-            className="button secondary"
-            onClick={() => setView((v) => (v === "grid" ? "list" : "grid"))}
-          >
-            {t("viewLabel")}: {view === "grid" ? t("viewGrid") : t("viewList")}
-          </button>
-          <span className="page-subtitle">{t("showing")}: {filteredSchedules.length}</span>
-        </div>
+        <CalendarControls
+          refreshing={refreshing}
+          onRefresh={refreshSchedules}
+          systemFilter={systemFilter}
+          setSystemFilter={setSystemFilter}
+          enabledOnly={enabledOnly}
+          setEnabledOnly={setEnabledOnly}
+          textFilter={textFilter}
+          setTextFilter={setTextFilter}
+          view={view}
+          setView={setView}
+          count={filteredSchedules.length}
+          weekLabel={weekLabel}
+          onPrevWeek={() => setWeekOffset((v) => v - 1)}
+          onNextWeek={() => setWeekOffset((v) => v + 1)}
+          onToday={() => setWeekOffset(0)}
+        />
       </section>
 
       <section className="panel calendar" style={{ gridColumn: "1 / -1" }}>
-        {view === "list" ? (
-          <div className="list">
-            {days.map((day) => {
-              const start = new Date(day);
-              start.setHours(0, 0, 0, 0);
-              const end = new Date(start);
-              end.setDate(start.getDate() + 1);
-              const items = filteredSchedules
-                .filter((s) => s.nextRunAt >= start.getTime() && s.nextRunAt < end.getTime())
-                .sort((a, b) => a.nextRunAt - b.nextRunAt);
-
-              return (
-                <div key={day.toDateString()} className="panel">
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                    <strong>
-                      {day.toLocaleDateString(locale === "da" ? "da-DK" : "en-US", {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </strong>
-                    <span className="pill">{items.length}</span>
-                  </div>
-                  <div className="list" style={{ marginTop: 12 }}>
-                    {items.map((item) => (
-                      <button
-                        key={item._id}
-                        className="list-item"
-                        style={{ textAlign: "left", cursor: "pointer" }}
-                        onClick={() => setSelectedId(item._id)}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                          <strong>{item.name}</strong>
-                          <span className="pill">
-                            {new Date(item.nextRunAt).toLocaleTimeString(locale === "da" ? "da-DK" : "en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <div className="page-subtitle">{item.system} · {item.scheduleText}</div>
-                      </button>
-                    ))}
-                    {!items.length && (
-                      <div className="page-subtitle" style={{ padding: 10 }}>
-                        —
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {view === "agenda" ? (
+          <CalendarAgenda
+            days={days}
+            items={filteredSchedules}
+            onSelect={(id) => setSelectedId(id)}
+          />
         ) : (
-          <div className="calendar-grid">
-          <div className="calendar-header">
-            <div className="calendar-cell day">{t("time")}</div>
-            {days.map((day) => (
-              <div key={day.toDateString()} className="calendar-cell day">
-                {day.toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </div>
-            ))}
-          </div>
-          {hours.map((hour) => (
-            <div key={hour} className="calendar-row">
-              <div className="calendar-cell time">
-                {hour.toString().padStart(2, "0")}:00
-              </div>
-              {days.map((day) => {
-                const key = `${day.toDateString()}-${hour}`;
-                const items = scheduleMap.get(key) ?? [];
-                return (
-                  <div key={key} className="calendar-cell">
-                    {items.map((item) => (
-                      <button
-                        key={item._id}
-                        className="calendar-event"
-                        style={{ textAlign: "left", cursor: "pointer", border: "none" }}
-                        onClick={() => setSelectedId(item._id)}
-                      >
-                        <strong>{item.name}</strong>
-                        <div className="meta">{item.system}</div>
-                        <div className="meta">{item.scheduleText}</div>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+          <CalendarGrid
+            days={days}
+            items={filteredSchedules}
+            onSelect={(id) => setSelectedId(id)}
+            timeLabel={t("time")}
+          />
         )}
       </section>
 
-      {selected && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setSelectedId(null)} />
-          <aside className="drawer">
-            <h2 style={{ marginTop: 0 }}>{selected.name}</h2>
-            <div className={`pill ${selected.enabled ? "ok" : "error"}`}>
-              {selected.system} · {selected.enabled ? t("enabled") : t("disabled")}
-            </div>
-            <p className="page-subtitle">
-              {t("nextRun")}: {new Date(selected.nextRunAt).toLocaleString(locale === "da" ? "da-DK" : "en-US")} ({formatRelativeTime(selected.nextRunAt)})
-            </p>
-
-            <div className="panel" style={{ marginTop: 16 }}>
-              <strong>{t("schedule")}</strong>
-              <div className="mono" style={{ marginTop: 8 }}>
-                {selected.scheduleText}
-              </div>
-            </div>
-
-            <div className="panel" style={{ marginTop: 16 }}>
-              <strong>{t("command")}</strong>
-              <pre className="mono" style={{ whiteSpace: "pre-wrap" }}>
-                {selected.command}
-              </pre>
-            </div>
-          </aside>
-        </>
-      )}
+      <ScheduleDrawer
+        open={Boolean(selected)}
+        onClose={() => setSelectedId(null)}
+        item={
+          selected
+            ? {
+                name: selected.name,
+                system: selected.system,
+                enabled: selected.enabled,
+                nextRunAt: selected.nextRunAt,
+                scheduleText: selected.scheduleText,
+                command: selected.command,
+                externalId: selected.externalId,
+              }
+            : null
+        }
+      />
     </div>
   );
 }
