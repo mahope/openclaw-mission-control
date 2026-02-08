@@ -115,9 +115,7 @@ export default function CalendarPage() {
             className="button secondary"
             onClick={() => setView((v) => (v === "grid" ? "list" : "grid"))}
           >
-            {locale === "da"
-              ? `Visning: ${view === "grid" ? "Grid" : "Liste"}`
-              : `View: ${view === "grid" ? "Grid" : "List"}`}
+            {t("viewLabel")}: {view === "grid" ? t("viewGrid") : t("viewList")}
           </button>
           <span className="page-subtitle">{t("showing")}: {filteredSchedules.length}</span>
         </div>
@@ -180,7 +178,7 @@ export default function CalendarPage() {
         ) : (
           <div className="calendar-grid">
           <div className="calendar-header">
-            <div className="calendar-cell day">Time</div>
+            <div className="calendar-cell day">{t("time")}</div>
             {days.map((day) => (
               <div key={day.toDateString()} className="calendar-cell day">
                 {day.toLocaleDateString(undefined, {
@@ -228,7 +226,7 @@ export default function CalendarPage() {
           <aside className="drawer">
             <h2 style={{ marginTop: 0 }}>{selected.name}</h2>
             <div className={`pill ${selected.enabled ? "ok" : "error"}`}>
-              {selected.system} · {selected.enabled ? "enabled" : "disabled"}
+              {selected.system} · {selected.enabled ? t("enabled") : t("disabled")}
             </div>
             <p className="page-subtitle">
               {t("nextRun")}: {new Date(selected.nextRunAt).toLocaleString(locale === "da" ? "da-DK" : "en-US")} ({formatRelativeTime(selected.nextRunAt)})

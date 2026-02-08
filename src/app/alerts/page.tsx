@@ -45,7 +45,7 @@ export default function AlertsPage() {
           </button>
           <span className="page-subtitle">{t("total")}: {alerts?.length ?? "—"}</span>
           <span className="page-subtitle">
-            Last dispatch: {lastDispatchAt ? new Date(lastDispatchAt).toLocaleString(locale === "da" ? "da-DK" : "en-US") : "—"}
+            {t("lastDispatch")}: {lastDispatchAt ? new Date(lastDispatchAt).toLocaleString(locale === "da" ? "da-DK" : "en-US") : "—"}
           </span>
         </div>
       </section>
@@ -67,7 +67,7 @@ export default function AlertsPage() {
               <pre className="mono" style={{ whiteSpace: "pre-wrap" }}>{a.body}</pre>
               {a.sendError && (
                 <div className="panel" style={{ marginTop: 8 }}>
-                  <strong>Send error</strong>
+                  <strong>{t("sendError")}</strong>
                   <pre className="mono" style={{ whiteSpace: "pre-wrap" }}>{a.sendError}</pre>
                 </div>
               )}

@@ -150,7 +150,7 @@ export function CommandPalette() {
         <div className="palette-header">
           <input
             className="palette-input"
-            placeholder="Type a command…"
+            placeholder={t("palettePlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -177,7 +177,7 @@ export function CommandPalette() {
           ))}
           {!filtered.length && (
             <div className="page-subtitle" style={{ padding: 14 }}>
-              No matches.
+              {t("paletteNoMatches")}
             </div>
           )}
         </div>

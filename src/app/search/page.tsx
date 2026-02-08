@@ -125,12 +125,17 @@ export default function SearchPage() {
             <>
               <div className="drawer-backdrop" onClick={() => { setSelected(null); setSelectedTitle(null); setSelectedPath(null); }} />
               <aside className="drawer">
-                <h2 style={{ marginTop: 0 }}>{selectedTitle ?? "Preview"}</h2>
+                <h2 style={{ marginTop: 0 }}>{selectedTitle ?? t("previewTitle")}</h2>
                 {selectedPath && (
                   <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                     <div className="page-subtitle mono" style={{ wordBreak: "break-all" }}>
                       {selectedPath}
                     </div>
+                    {selectedPath.includes("#") && (
+                      <div className="page-subtitle">
+                        {t("chunk")}: {selectedPath.split("#")[1]}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <button
                         className="button secondary"
@@ -150,7 +155,7 @@ export default function SearchPage() {
                 {previewLoading && <p className="page-subtitle">{t("previewLoading")}</p>}
                 {selected ? (
                   <>
-                    <div className="pill">Preview</div>
+                    <div className="pill">{t("previewLabel")}</div>
                     <p className="page-subtitle">
                       {new Date(selected.mtimeMs).toLocaleString(locale === "da" ? "da-DK" : "en-US")} · {selected.bytes} bytes
                     </p>

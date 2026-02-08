@@ -212,7 +212,7 @@ export default function ActivityPage() {
 
                 {tailData && (
                   <div className="panel" style={{ marginTop: 16 }}>
-                    <strong>Preview: {tailData.path}</strong>
+                    <strong>{t("previewLabel")}: {tailData.path}</strong>
                     <div className="page-subtitle">
                       {new Date(tailData.mtimeMs).toLocaleString("da-DK")} · {tailData.bytes} bytes
                     </div>
